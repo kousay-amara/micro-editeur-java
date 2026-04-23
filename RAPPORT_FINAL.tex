@@ -72,9 +72,11 @@ C'est particulièrement utile pour les cas d'utilisation 2 et 3 du sujet où on 
 
 Pour la toolbar, j'avais besoin de cloner des formes avec toutes leurs propriétés. Au lieu de créer des constructeurs complexes, chaque shape implémente une méthode \texttt{clone()}.
 
-En regardant le code : Shape.java ligne 19 définit l'interface, et chaque implémentation (Rectangle ligne 52, RegularPolygon ligne 90, Group ligne 120) retourne une copie conforme. La copie est une vraie duplication des propriétés et, dans le cas de Group, elle clone récursivement tous les enfants.
+En regardant le code : Shape.java ligne 19 définit l'interface, et chaque implémentation (Rectangle ligne 52, RegularPolygon ligne 93, Group ligne 120) retourne une copie conforme. La copie est une vraie duplication des propriétés et, dans le cas de Group, elle clone récursivement tous les enfants.
 
 Cela simplifiait énormément le drag-drop dans la toolbar : on stocke un prototype pour chaque forme, et quand l'utilisateur la traîne, on appelle \texttt{clone()} pour créer une instance indépendante. Si l'utilisateur la remet dans la toolbar, on la clone de nouveau.
+
+Les cas 7 et 8 s'appuient aussi sur ce mécanisme : la persistance de la toolbar sauvegarde l'ensemble des prototypes courants et les restaure au prochain démarrage via ces mêmes méthodes \texttt{clone()}.
 
 \subsection{Command Pattern}
 
@@ -82,9 +84,11 @@ C'était le pattern critique du projet, celui sur lequel le sujet insistait : l'
 
 Chaque opération dans l'éditeur est une commande concrète : AddShapeCommand, RemoveShapeCommand, MoveShapeCommand, EditShapeCommand, GroupCommand, UngroupCommand, ainsi que AddPrototypeCommand et RemovePrototypeCommand pour les actions liées à la toolbar. CommandHistory (ligne 6) gère le mécanisme avec un double-stack : une pile undo et une pile redo.
 
-Quand l'utilisateur ajoute r1, puis r2, puis groupe les deux, le système empile trois commandes. Quand on clique undo 3 fois, chaque commande défait son action dans l'ordre inverse. Redo refait dans le bon ordre. C'est une mécanique classique et fiable.
+Quand l'utilisateur ajoute un premier rectangle, puis un second, puis groupe les deux, le système empile trois commandes. Quand on clique undo 3 fois, chaque commande défait son action dans l'ordre inverse. Redo refait dans le bon ordre. C'est une mécanique classique et fiable.
 
 L'avantage est que chaque commande ne connaît que sa propre logique d'undo. Ajouter une nouvelle commande = ajouter une classe. Aucune modification à CommandHistory n'est nécessaire.
+
+Pour le cas 7, après le chargement d'un document, \texttt{history.clear()} réinitialise les deux piles pour qu'il soit impossible d'annuler vers l'état précédent l'ouverture du fichier.
 
 \subsection{Memento Pattern}
 
@@ -111,6 +115,8 @@ Le modèle et la vue doivent rester découplés. Pour cela, j'ai implémenté un
 \texttt{WhiteboardPanel} implémente \texttt{SceneListener}. Quand il reçoit une notification, il déclenche un \texttt{repaint()} pour redessiner l'affichage.
 
 Dans l'implémentation actuelle, ce pattern couvre donc bien les changements portés par \texttt{Scene}. En revanche, certaines modifications interactives plus fines, comme certains déplacements ou éditions appliqués directement aux formes, provoquent encore un rafraîchissement explicite côté interface. L'Observer est donc présent et utile pour découpler la scène de la vue, mais il ne couvre pas encore automatiquement toutes les mutations internes des objets métier.
+
+Le cas 7 bénéficie aussi de l'Observer : \texttt{scene.replaceShapes()} appelle \texttt{notifyListeners()} en fin d'exécution, ce qui déclenche automatiquement le redessinage complet de la vue après chargement.
 
 \section{Tests et Validation}
 
@@ -193,6 +199,19 @@ L'architecture respecte les spécifications du sujet, notamment la séparation e
   \node[font=\scriptsize, align=center, right=4pt]
     at ($(obsL)!0.5!(obsL |- vue.west)$) {Observer\\SceneListener};
 
+  % --- Couche Persistance (côté droit) ---
+  \node[bloc, fill=purple!10, text width=3.2cm] (pers) at (6.2, 4.0)
+    {\textbf{Couche Persistance}\\[3pt]
+     \scriptsize ShapePersistenceService\\ShapeData (DTO)};
+
+  % Contrôle → Persistance (sauvegarde/chargement)
+  \draw[fl] (ctrl.east) -| (pers.north);
+  \node[font=\scriptsize, align=center, right=4pt] at (6.2, 6.0) {sauvegarde\\charge};
+
+  % Persistance → Modèle (sérialisation)
+  \draw[fl] (pers.south) |- (mod.east);
+  \node[font=\scriptsize, right=4pt] at (6.2, 1.9) {sérialise};
+
 \end{tikzpicture}
 \end{center}
 
@@ -205,6 +224,8 @@ L'architecture respecte les spécifications du sujet, notamment la séparation e
 \textbf{Couche Commande} : Command (interface), CommandHistory (gestion undo/redo), ShapeMemento (snapshots d'état), et 8 commandes concrètes. Cela permet des opérations réversibles.
 
 \textbf{Couche Interface} : PropertyDialog (édition des propriétés), SelectionController (logique de sélection/groupage). Ces couches orchestrent l'interaction utilisateur et déclenchent certaines modifications du modèle, directement ou via les commandes.
+
+\textbf{Couche Persistance} : ShapePersistenceService sérialise/désérialise les formes (sérialisation Java) ; ShapeData est le DTO de transfert. Cette couche gère la sauvegarde du document (cas 7) et la persistance de la toolbar entre sessions (cas 8).
 
 Cette organisation maintient une séparation claire des responsabilités et facilite la maintenance.
 
@@ -243,6 +264,7 @@ Ces patterns structurent les points les plus importants du projet : hiérarchie 
   \item \texttt{src/main/java/command/ShapeMemento.java} (Memento)
   \item \texttt{src/main/java/ui/strategy/PropertyEditorStrategy.java} (Strategy)
   \item \texttt{src/main/java/model/Scene.java} (Observer)
+  \item \texttt{src/main/java/persistence/ShapePersistenceService.java} (cas 7 et 8)
   \item \texttt{src/test/java/command/CommandTest.java} (tests undo/redo)
 \end{itemize}
 
