@@ -10,13 +10,19 @@ import command.CommandHistory;
 public class ControlPanel extends Panel {
     private Button undoBtn;
     private Button redoBtn;
+    private Button saveBtn;
+    private Button loadBtn;
     private CommandHistory history;
     private WhiteboardPanel whiteboardPanel;
+    private final Runnable onSave;
+    private final Runnable onLoad;
 
-    public ControlPanel(CommandHistory history, WhiteboardPanel whiteboardPanel) {
+    public ControlPanel(CommandHistory history, WhiteboardPanel whiteboardPanel, Runnable onSave, Runnable onLoad) {
         this.history = history;
         this.whiteboardPanel = whiteboardPanel;
-        setLayout(new GridLayout(0, 1));
+        this.onSave = onSave;
+        this.onLoad = onLoad;
+        setLayout(new GridLayout(1, 0, 8, 0));
 
         undoBtn = new Button("Undo");
         undoBtn.addActionListener(new ActionListener() {
@@ -39,6 +45,28 @@ public class ControlPanel extends Panel {
             }
         });
         add(redoBtn);
+
+        saveBtn = new Button("Save");
+        saveBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (ControlPanel.this.onSave != null) {
+                    ControlPanel.this.onSave.run();
+                }
+            }
+        });
+        add(saveBtn);
+
+        loadBtn = new Button("Load");
+        loadBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (ControlPanel.this.onLoad != null) {
+                    ControlPanel.this.onLoad.run();
+                }
+            }
+        });
+        add(loadBtn);
 
         // Initialiser l'état des boutons
         updateButtonStates();

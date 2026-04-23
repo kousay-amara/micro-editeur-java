@@ -38,6 +38,15 @@ public class Scene {
         shapes.add(index, shape);
         notifyListeners();
     }
+
+    public void replaceShapes(List<Shape> newShapes) {
+        shapes = new ArrayList<>(newShapes);
+        selectedShapes.clear();
+        for (Shape shape : shapes) {
+            clearSelectionRecursively(shape);
+        }
+        notifyListeners();
+    }
     
     public List<Shape> getShapes() {
         return new ArrayList<>(shapes);
@@ -79,6 +88,17 @@ public class Scene {
     public void notifyListeners() {
         for (SceneListener listener : listeners) {
             listener.onShapeChanged();
+        }
+    }
+
+    private void clearSelectionRecursively(Shape shape) {
+        shape.setSelected(false);
+        if (!shape.isGroup()) {
+            return;
+        }
+
+        for (Shape child : shape.getChildren()) {
+            clearSelectionRecursively(child);
         }
     }
 }

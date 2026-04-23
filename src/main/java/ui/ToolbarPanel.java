@@ -84,7 +84,31 @@ public class ToolbarPanel extends Panel {
         return items.size();
     }
 
+    public List<Shape> getPrototypesSnapshot() {
+        ArrayList<Shape> snapshot = new ArrayList<>();
+        for (ToolbarItem item : items) {
+            Shape clone = item.prototype.clone();
+            normalizePrototype(clone);
+            snapshot.add(clone);
+        }
+        return snapshot;
+    }
+
+    public void replacePrototypes(List<Shape> prototypes) {
+        items.clear();
+        itemsPanel.removeAll();
+
+        for (Shape prototype : prototypes) {
+            addPrototypeDirect(prototype, items.size());
+        }
+
+        relayoutItems();
+        revalidate();
+        repaint();
+    }
+
     public void addPrototypeDirect(Shape prototype, int index) {
+        normalizePrototype(prototype);
         ToolbarItem item = createItem(prototype);
         int insertionIndex = Math.max(0, Math.min(index, items.size()));
         items.add(insertionIndex, item);
@@ -162,6 +186,22 @@ public class ToolbarPanel extends Panel {
             y += UIConstants.TOOLBAR_ITEM_SPACING;
         }
         itemsPanel.repaint();
+    }
+
+    private void normalizePrototype(Shape prototype) {
+        clearSelectionRecursively(prototype);
+        prototype.move(-prototype.getX(), -prototype.getY());
+    }
+
+    private void clearSelectionRecursively(Shape shape) {
+        shape.setSelected(false);
+        if (!shape.isGroup()) {
+            return;
+        }
+
+        for (Shape child : shape.getChildren()) {
+            clearSelectionRecursively(child);
+        }
     }
 
     private void drawTrash(Graphics g, int width, int height) {
