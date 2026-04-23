@@ -1,0 +1,27 @@
+# Build outputs
+target/
+bin/
+
+# Java artifacts
+*.class
+*.jar
+*.war
+
+# LaTeX generated files
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+texput.log
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
