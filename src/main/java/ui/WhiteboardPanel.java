@@ -1,8 +1,10 @@
 package ui;
 
+import java.awt.BasicStroke;
 import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.PopupMenu;
 import java.awt.MenuItem;
 import java.awt.event.MouseAdapter;
@@ -30,6 +32,8 @@ public class WhiteboardPanel extends Canvas implements SceneListener {
     private int dragStartY = 0;
     private int shapeStartX = 0;
     private int shapeStartY = 0;
+    private boolean selecting = false;
+    private int selX0, selY0, selX1, selY1;
 
     public interface ShapeToToolbarListener {
         boolean isOverToolbar(int screenX, int screenY);
@@ -123,6 +127,9 @@ public class WhiteboardPanel extends Canvas implements SceneListener {
                 selectionController.toggleSelection(topShape, false);
             } else {
                 selectionController.clearSelection();
+                selecting = true;
+                selX0 = selX1 = e.getX();
+                selY0 = selY1 = e.getY();
             }
         }
         repaint();
@@ -178,6 +185,10 @@ private void handleRightClick(MouseEvent e) {
             clampShapeToBounds(draggedShape);
             dragStartX = e.getX();
             dragStartY = e.getY();
+            repaint();
+        } else if (selecting) {
+            selX1 = e.getX();
+            selY1 = e.getY();
             repaint();
         }
     }
@@ -248,6 +259,16 @@ private void handleMouseReleased(MouseEvent e) {
 
         draggedShape = null;
     }
+    if (selecting) {
+        selecting = false;
+        int x = Math.min(selX0, selX1);
+        int y = Math.min(selY0, selY1);
+        int w = Math.abs(selX1 - selX0);
+        int h = Math.abs(selY1 - selY0);
+        if (w > 4 || h > 4) {
+            selectionController.selectShapesInRect(x, y, w, h);
+        }
+    }
     repaint();
 }
 
@@ -266,6 +287,15 @@ private void handleMouseReleased(MouseEvent e) {
         super.paint(g);
         for (Shape shape : scene.getShapes()) {
             shapeRenderer.render(shape, g);
+        }
+        if (selecting) {
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setColor(new Color(0, 100, 255));
+            g2.setStroke(new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER,
+                    1f, new float[]{4f, 4f}, 0f));
+            int x = Math.min(selX0, selX1);
+            int y = Math.min(selY0, selY1);
+            g2.drawRect(x, y, Math.abs(selX1 - selX0), Math.abs(selY1 - selY0));
         }
     }
 }

@@ -48,6 +48,17 @@ public class SelectionController {
         whiteboard.repaint();
     }
 
+    public void selectShapesInRect(int x, int y, int w, int h) {
+        for (Shape shape : scene.getShapes()) {
+            if (shape.getX() >= x && shape.getX() <= x + w &&
+                shape.getY() >= y && shape.getY() <= y + h) {
+                shape.setSelected(true);
+                scene.addSelectedShape(shape);
+            }
+        }
+        whiteboard.repaint();
+    }
+
     /**
      * Clear all selections.
      */

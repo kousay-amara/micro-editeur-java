@@ -56,7 +56,7 @@ J'ai conçu un éditeur vectoriel interactif en Java AWT permettant de créer, m
 
 Le sujet officiel comporte 8 cas d'utilisation. Cette version couvre l'ensemble du périmètre attendu : drag-drop de formes depuis une toolbar, groupage/dégroupage, édition des propriétés, sauvegarde de prototypes via clone, undo/redo, sauvegarde/chargement d'un document et persistance de la toolbar au redémarrage. L'implémentation s'appuie sur 20 tests unitaires.
 
-\textbf{Contexte} : Ce projet a été réalisé en solo. L'implémentation couvre les 8 cas d'utilisation du sujet, avec une sélection multiple réalisée par \texttt{Ctrl+clics} successifs.
+\textbf{Contexte} : Ce projet a été réalisé en solo. L'implémentation couvre les 8 cas d'utilisation du sujet, avec une sélection multiple réalisée par \texttt{Ctrl+clics} successifs ou par rectangle de sélection.
 
 \section{Les Six Design Patterns Appliqués}
 
@@ -72,7 +72,7 @@ C'est particulièrement utile pour les cas d'utilisation 2 et 3 du sujet où on 
 
 Pour la toolbar, j'avais besoin de cloner des formes avec toutes leurs propriétés. Au lieu de créer des constructeurs complexes, chaque shape implémente une méthode \texttt{clone()}.
 
-En regardant le code : Shape.java ligne 19 définit l'interface, et chaque implémentation (Rectangle ligne 52, RegularPolygon ligne 93, Group ligne 120) retourne une copie conforme. La copie est une vraie duplication des propriétés et, dans le cas de Group, elle clone récursivement tous les enfants.
+En regardant le code : Shape.java ligne 19 définit l'interface, et chaque implémentation (Rectangle ligne 52, RegularPolygon ligne 90, Group ligne 120) retourne une copie conforme. La copie est une vraie duplication des propriétés et, dans le cas de Group, elle clone récursivement tous les enfants.
 
 Cela simplifiait énormément le drag-drop dans la toolbar : on stocke un prototype pour chaque forme, et quand l'utilisateur la traîne, on appelle \texttt{clone()} pour créer une instance indépendante. Si l'utilisateur la remet dans la toolbar, on la clone de nouveau.
 
@@ -136,7 +136,7 @@ Le sujet comporte 8 cas d'utilisation. Le projet couvre les 8 cas :
 
 \begin{enumerate}
   \item \textbf{Drag-drop toolbar} : AddShapeCommand gère l'ajout dans la scène
-  \item \textbf{Groupage} : Group et SelectionController gèrent la sélection et la création du groupe ; la sélection multiple est réalisée via des \texttt{Ctrl+clics} successifs
+  \item \textbf{Groupage} : Group et SelectionController gèrent la sélection et la création du groupe ; la sélection multiple est réalisée via des \texttt{Ctrl+clics} successifs ou par rectangle de sélection
   \item \textbf{Dégroupage} : UngroupCommand décompose le groupe et remet les formes individuelles
   \item \textbf{Édition propriétés} : EditShapeCommand + PropertyDialog ; les propriétés éditables incluent position, taille, rotation, couleur, et pour les formes simples le centre de rotation, initialisé par défaut sur le centre de la forme puis modifiable
   \item \textbf{Drag-drop vers toolbar} : \texttt{clone()} + AddPrototypeCommand pour ajouter un prototype ; suppression vers la poubelle via RemoveShapeCommand
@@ -247,7 +247,6 @@ Ces patterns structurent les points les plus importants du projet : hiérarchie 
 \section{Limites Connues}
 
 \begin{itemize}
-  \item La sélection multiple du cas 2 est implémentée par \texttt{Ctrl+clics}, mais pas par rectangle de sélection.
   \item Le format de persistance est binaire et spécifique au projet ; il n'est pas pensé pour l'interopérabilité.
   \item Le mécanisme Observer couvre surtout les changements de scène et de sélection ; certaines mises à jour restent déclenchées explicitement par l'interface.
   \item L'édition des groupes reste plus simple que celle des formes élémentaires : on édite leur centre global, leur rotation et leur échelle, mais pas un pivot distinct.
