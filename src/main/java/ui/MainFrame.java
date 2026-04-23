@@ -186,7 +186,7 @@ public class MainFrame extends Frame {
         dialog.add(buttonPanel, BorderLayout.SOUTH);
 
         dialog.pack();
-        dialog.setLocation(getX() + (getWidth() - dialog.getWidth()) / 2, getY() + (getHeight() - dialog.getHeight()) / 2);
+        dialog.setLocationRelativeTo(null);
         dialog.setVisible(true);
     }
 }
