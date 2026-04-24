@@ -69,12 +69,12 @@ public class ShapePersistenceService {
 
     private ShapeData toData(Shape shape) throws IOException {
         ShapeData data = new ShapeData();
-        data.type = shape.getType();
-        data.rotation = shape.getRotation();
+        data.setType(shape.getType());
+        data.setRotation(shape.getRotation());
 
         if (shape instanceof Group) {
             for (Shape child : shape.getChildren()) {
-                data.children.add(toData(child));
+                data.getChildren().add(toData(child));
             }
             return data;
         }
@@ -84,25 +84,25 @@ public class ShapePersistenceService {
         }
 
         ShapeLeaf leaf = (ShapeLeaf) shape;
-        data.x = leaf.getX();
-        data.y = leaf.getY();
-        data.rotationCenterX = leaf.getRotationCenterX();
-        data.rotationCenterY = leaf.getRotationCenterY();
+        data.setX(leaf.getX());
+        data.setY(leaf.getY());
+        data.setRotationCenterX(leaf.getRotationCenterX());
+        data.setRotationCenterY(leaf.getRotationCenterY());
 
         if (shape instanceof Rectangle) {
             Rectangle rectangle = (Rectangle) shape;
-            data.colorRgb = rectangle.getColor().getRGB();
-            data.width = rectangle.getWidth();
-            data.height = rectangle.getHeight();
-            data.cornerRadius = rectangle.getCornerRadius();
+            data.setColorRgb(rectangle.getColor().getRGB());
+            data.setWidth(rectangle.getWidth());
+            data.setHeight(rectangle.getHeight());
+            data.setCornerRadius(rectangle.getCornerRadius());
             return data;
         }
 
         if (shape instanceof RegularPolygon) {
             RegularPolygon polygon = (RegularPolygon) shape;
-            data.colorRgb = polygon.getColor().getRGB();
-            data.sides = polygon.getSides();
-            data.sideLength = polygon.getSideLength();
+            data.setColorRgb(polygon.getColor().getRGB());
+            data.setSides(polygon.getSides());
+            data.setSideLength(polygon.getSideLength());
             return data;
         }
 
@@ -110,35 +110,39 @@ public class ShapePersistenceService {
     }
 
     private Shape fromData(ShapeData data) throws IOException {
-        if (data == null || data.type == null) {
+        if (data == null || data.getType() == null) {
             throw new IOException("Forme invalide dans la sauvegarde.");
         }
 
-        if ("Group".equals(data.type)) {
+        if ("Group".equals(data.getType())) {
             Group group = new Group();
-            for (ShapeData child : data.children) {
+            for (ShapeData child : data.getChildren()) {
                 group.add(fromData(child));
             }
-            group.setRotation(data.rotation);
+            group.setRotation(data.getRotation());
             return group;
         }
 
-        if ("Rectangle".equals(data.type)) {
-            Rectangle rectangle = new Rectangle(data.x, data.y, data.width, data.height, toColor(data.colorRgb));
-            rectangle.setCornerRadius(data.cornerRadius);
-            rectangle.setRotation(data.rotation);
-            rectangle.setRotationCenter(data.rotationCenterX, data.rotationCenterY);
+        if ("Rectangle".equals(data.getType())) {
+            Rectangle rectangle = new Rectangle(
+                    data.getX(), data.getY(), data.getWidth(), data.getHeight(),
+                    toColor(data.getColorRgb()));
+            rectangle.setCornerRadius(data.getCornerRadius());
+            rectangle.setRotation(data.getRotation());
+            rectangle.setRotationCenter(data.getRotationCenterX(), data.getRotationCenterY());
             return rectangle;
         }
 
-        if ("Polygon".equals(data.type)) {
-            RegularPolygon polygon = new RegularPolygon(data.x, data.y, data.sides, data.sideLength, toColor(data.colorRgb));
-            polygon.setRotation(data.rotation);
-            polygon.setRotationCenter(data.rotationCenterX, data.rotationCenterY);
+        if ("Polygon".equals(data.getType())) {
+            RegularPolygon polygon = new RegularPolygon(
+                    data.getX(), data.getY(), data.getSides(), data.getSideLength(),
+                    toColor(data.getColorRgb()));
+            polygon.setRotation(data.getRotation());
+            polygon.setRotationCenter(data.getRotationCenterX(), data.getRotationCenterY());
             return polygon;
         }
 
-        throw new IOException("Type de forme inconnu dans la sauvegarde: " + data.type);
+        throw new IOException("Type de forme inconnu dans la sauvegarde: " + data.getType());
     }
 
     private Color toColor(int rgb) {

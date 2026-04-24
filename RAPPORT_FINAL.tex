@@ -104,7 +104,7 @@ J'avais un problème : PropertyDialog avait 80+ lignes de code dupliquées pour 
 
 J'ai créé PropertyEditorStrategy (ligne 10) comme interface. La méthode \texttt{setupFields()} crée les bons champs et \texttt{applyChanges()} récupère les valeurs. Puis j'ai écrit trois implémentations : RectanglePropertyEditor, PolygonPropertyEditor, GroupPropertyEditor.
 
-PropertyDialog délègue maintenant le travail à la bonne stratégie (choix dynamique). Cela a réduit PropertyDialog de 252 lignes à 122 lignes. Et si j'ajoute une nouvelle forme à l'avenir, je crée une nouvelle stratégie sans toucher à PropertyDialog, avec ajout du cas correspondant dans la factory.
+PropertyDialog délègue maintenant le travail à la bonne stratégie (choix dynamique). Cela a réduit PropertyDialog de 252 lignes à 124 lignes. Et si j'ajoute une nouvelle forme à l'avenir, je crée une nouvelle stratégie sans toucher à PropertyDialog, avec ajout du cas correspondant dans la factory.
 
 \subsection{Observer Pattern}
 
@@ -163,7 +163,7 @@ L'architecture respecte les spécifications du sujet, notamment la séparation e
   % --- Noeuds ---
   \node[bloc, fill=blue!15]   (vue)  at (-2.5, 7.0)
     {\textbf{Vue / UI AWT}\\[3pt]
-     \scriptsize WhiteboardPanel, ToolbarPanel\\AwtShapeRenderer};
+     \scriptsize MainFrame, WhiteboardPanel\\ToolbarPanel, AwtShapeRenderer};
 
   \node[bloc, fill=orange!20] (ctrl) at ( 2.5, 7.0)
     {\textbf{Interaction / Contrôle}\\[3pt]
@@ -204,9 +204,9 @@ L'architecture respecte les spécifications du sujet, notamment la séparation e
     {\textbf{Couche Persistance}\\[3pt]
      \scriptsize ShapePersistenceService\\ShapeData (DTO)};
 
-  % Contrôle → Persistance (sauvegarde/chargement)
-  \draw[fl] (ctrl.east) -| (pers.north);
-  \node[font=\scriptsize, align=center, right=4pt] at (6.2, 6.0) {sauvegarde\\charge};
+  % Vue/MainFrame → Persistance (sauvegarde/chargement, passe par-dessus les blocs)
+  \draw[fl] (vue.north) -- ++(0,0.5) -| (pers.north);
+  \node[font=\scriptsize, align=center, right=4pt] at (6.2, 6.5) {sauvegarde\\charge};
 
   % Persistance → Modèle (sérialisation)
   \draw[fl] (pers.south) |- (mod.east);
@@ -217,13 +217,13 @@ L'architecture respecte les spécifications du sujet, notamment la séparation e
 
 \noindent Ce diagramme suit la logique vue en cours et dans les corrections : une architecture par blocs, avec les dépendances principales visibles sans détailler toute l'UML des classes.
 
-\textbf{Couche Données} : Shape (interface), Rectangle, RegularPolygon, Group (composite), Scene (conteneur). Ces classes contiennent uniquement les données et la logique métier, sans rendu graphique.
+\textbf{Modèle} : Shape (interface), Rectangle, RegularPolygon, Group (composite), Scene (conteneur). Ces classes contiennent uniquement les données et la logique métier, sans rendu graphique.
 
-\textbf{Couche Rendu} : AwtShapeRenderer (calcul et affichage des formes), WhiteboardPanel (gestion de la fenêtre de dessin), ToolbarPanel (affichage des prototypes). Le rendu reste indépendant des données.
+\textbf{Vue / UI AWT} : MainFrame (orchestrateur, détient Scene, CommandHistory et ShapePersistenceService), WhiteboardPanel (fenêtre de dessin), ToolbarPanel (affichage des prototypes), AwtShapeRenderer (rendu graphique). Le rendu reste indépendant des données.
 
 \textbf{Couche Commande} : Command (interface), CommandHistory (gestion undo/redo), ShapeMemento (snapshots d'état), et 8 commandes concrètes. Cela permet des opérations réversibles.
 
-\textbf{Couche Interface} : PropertyDialog (édition des propriétés), SelectionController (logique de sélection/groupage). Ces couches orchestrent l'interaction utilisateur et déclenchent certaines modifications du modèle, directement ou via les commandes.
+\textbf{Interaction / Contrôle} : PropertyDialog (édition des propriétés), SelectionController (logique de sélection/groupage). Ces composants orchestrent l'interaction utilisateur et déclenchent certaines modifications du modèle, directement ou via les commandes.
 
 \textbf{Couche Persistance} : ShapePersistenceService sérialise/désérialise les formes (sérialisation Java) ; ShapeData est le DTO de transfert. Cette couche gère la sauvegarde du document (cas 7) et la persistance de la toolbar entre sessions (cas 8).
 

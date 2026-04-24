@@ -18,7 +18,6 @@ public class CommandHistory {
         redoStack.clear();
     }
     
-    // Pour EditShapeCommand: les changements sont déjà appliqués, juste ajouter à history
     public void addToHistory(Command command) {
         undoStack.add(command);
         redoStack.clear();

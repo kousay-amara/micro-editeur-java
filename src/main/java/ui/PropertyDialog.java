@@ -1,9 +1,17 @@
 package ui;
 
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Button;
+import java.awt.Dialog;
+import java.awt.FlowLayout;
+import java.awt.Frame;
+import java.awt.GridLayout;
+import java.awt.Label;
+import java.awt.Panel;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import javax.swing.JOptionPane;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import model.Shape;
 import command.ShapeMemento;
 import ui.strategy.PropertyEditorStrategy;
@@ -51,9 +59,9 @@ public class PropertyDialog extends Dialog {
         setSize(UIConstants.PROPERTY_DIALOG_WIDTH, UIConstants.PROPERTY_DIALOG_HEIGHT);
         setLocationRelativeTo(parent);
 
-        addWindowListener(new java.awt.event.WindowAdapter() {
+        addWindowListener(new WindowAdapter() {
             @Override
-            public void windowClosing(java.awt.event.WindowEvent e) {
+            public void windowClosing(WindowEvent e) {
                 cancelChanges();
             }
         });
@@ -64,12 +72,23 @@ public class PropertyDialog extends Dialog {
             editor.applyChanges(shape);
             return true;
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this,
-                "Valeur invalide : " + e.getMessage() + "\nVeuillez entrer des nombres valides.",
-                "Erreur d'entrée",
-                JOptionPane.ERROR_MESSAGE);
+            showError("Valeur invalide. Veuillez entrer des nombres valides.");
             return false;
         }
+    }
+
+    private void showError(String message) {
+        Dialog errorDialog = new Dialog(this, "Erreur d'entrée", true);
+        errorDialog.setLayout(new BorderLayout(8, 8));
+        errorDialog.add(new Label(message), BorderLayout.CENTER);
+        Button ok = new Button("OK");
+        ok.addActionListener(ae -> errorDialog.dispose());
+        Panel p = new Panel();
+        p.add(ok);
+        errorDialog.add(p, BorderLayout.SOUTH);
+        errorDialog.pack();
+        errorDialog.setLocationRelativeTo(null);
+        errorDialog.setVisible(true);
     }
 
     private Button createButton(String label, boolean closeOnClick) {

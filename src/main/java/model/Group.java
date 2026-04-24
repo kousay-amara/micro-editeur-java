@@ -6,7 +6,7 @@ import util.GeometryUtils;
 
 public class Group implements Shape {
     private List<Shape> children = new ArrayList<>();
-    private Group parent = null;
+    private Group parent;
     private boolean selected = false;
     private double rotation = 0;
     
@@ -126,7 +126,6 @@ public class Group implements Shape {
         return cloned;
     }
 
-    // Parent management
     public Group getParent() {
         return parent;
     }
@@ -170,18 +169,11 @@ public class Group implements Shape {
         double sin = Math.sin(radians);
 
         for (Shape child : children) {
-            // Position relative au centre du groupe
             int dx = child.getX() - centerX;
             int dy = child.getY() - centerY;
-
-            // Rotation géométrique (inverse car AWT a Y inversé)
             int newDx = (int) (dx * cos + dy * sin);
             int newDy = (int) (-dx * sin + dy * cos);
-
-            // Déplacer l'enfant à sa nouvelle position
             child.move(newDx - dx, newDy - dy);
-
-            // Faire tourner l'orientation de toute la sous-hiérarchie.
             shiftRotationRecursively(child, angle);
         }
         rotation += angle;

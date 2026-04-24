@@ -27,7 +27,7 @@ public class WhiteboardPanel extends Canvas implements SceneListener {
     private ControlPanel controlPanel;
     private SelectionController selectionController;
     private final ShapeRenderer shapeRenderer;
-    private Shape draggedShape = null;
+    private Shape draggedShape;
     private int dragStartX = 0;
     private int dragStartY = 0;
     private int shapeStartX = 0;
@@ -60,7 +60,6 @@ public class WhiteboardPanel extends Canvas implements SceneListener {
         this.selectionController = new SelectionController(scene, history, this);
     }
 
-    // Helper pour exécuter un command et mettre à jour les boutons
     private void executeCommand(Command cmd) {
         history.execute(cmd);
         onHistoryChanged();
@@ -76,7 +75,6 @@ public class WhiteboardPanel extends Canvas implements SceneListener {
     public WhiteboardPanel(Scene scene, CommandHistory history) {
         this.scene = scene;
         this.history = history;
-        this.controlPanel = null;  // Sera set par MainFrame
         this.shapeRenderer = new AwtShapeRenderer();
         setBackground(Color.WHITE);
         scene.addListener(this);

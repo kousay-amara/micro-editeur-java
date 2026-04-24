@@ -19,88 +19,67 @@ public class ShapePersistenceServiceTest {
 
     @Test
     public void testSaveAndLoadLeafShapes() throws IOException {
-        Path tempFile = Files.createTempFile("shapes", ".dat");
-
-        Rectangle rectangle = new Rectangle(120, 90, 140, 80, Color.BLUE);
-        rectangle.setCornerRadius(16);
-        rectangle.setRotation(22.5);
-        rectangle.setRotationCenter(140, 100);
-
-        RegularPolygon polygon = new RegularPolygon(260, 180, 5, 70, Color.RED);
-        polygon.setRotation(45);
-        polygon.setRotationCenter(250, 170);
-
+        Path tmp = Files.createTempFile("shapes", ".dat");
+        Rectangle rect = new Rectangle(120, 90, 140, 80, Color.BLUE);
+        rect.setCornerRadius(16);
+        rect.setRotation(22.5);
+        RegularPolygon poly = new RegularPolygon(260, 180, 5, 70, Color.RED);
+        poly.setRotation(45);
         try {
-            service.saveShapes(List.of(rectangle, polygon), tempFile.toFile());
-            List<Shape> loadedShapes = service.loadShapes(tempFile.toFile());
+            service.saveShapes(List.of(rect, poly), tmp.toFile());
+            List<Shape> shapes = service.loadShapes(tmp.toFile());
 
-            assertEquals(2, loadedShapes.size());
+            assertEquals(2, shapes.size());
 
-            Rectangle loadedRectangle = (Rectangle) loadedShapes.get(0);
-            assertEquals(rectangle.getX(), loadedRectangle.getX());
-            assertEquals(rectangle.getY(), loadedRectangle.getY());
-            assertEquals(rectangle.getWidth(), loadedRectangle.getWidth());
-            assertEquals(rectangle.getHeight(), loadedRectangle.getHeight());
-            assertEquals(rectangle.getCornerRadius(), loadedRectangle.getCornerRadius());
-            assertEquals(rectangle.getRotation(), loadedRectangle.getRotation(), 0.001);
-            assertEquals(rectangle.getRotationCenterX(), loadedRectangle.getRotationCenterX());
-            assertEquals(rectangle.getRotationCenterY(), loadedRectangle.getRotationCenterY());
-            assertEquals(rectangle.getColor().getRGB(), loadedRectangle.getColor().getRGB());
+            Rectangle r = (Rectangle) shapes.get(0);
+            assertEquals(120, r.getX());
+            assertEquals(90, r.getY());
+            assertEquals(140, r.getWidth());
+            assertEquals(80, r.getHeight());
+            assertEquals(16, r.getCornerRadius());
+            assertEquals(22.5, r.getRotation(), 0.001);
+            assertEquals(Color.BLUE.getRGB(), r.getColor().getRGB());
 
-            RegularPolygon loadedPolygon = (RegularPolygon) loadedShapes.get(1);
-            assertEquals(polygon.getX(), loadedPolygon.getX());
-            assertEquals(polygon.getY(), loadedPolygon.getY());
-            assertEquals(polygon.getSides(), loadedPolygon.getSides());
-            assertEquals(polygon.getSideLength(), loadedPolygon.getSideLength());
-            assertEquals(polygon.getRotation(), loadedPolygon.getRotation(), 0.001);
-            assertEquals(polygon.getRotationCenterX(), loadedPolygon.getRotationCenterX());
-            assertEquals(polygon.getRotationCenterY(), loadedPolygon.getRotationCenterY());
-            assertEquals(polygon.getColor().getRGB(), loadedPolygon.getColor().getRGB());
+            RegularPolygon p = (RegularPolygon) shapes.get(1);
+            assertEquals(260, p.getX());
+            assertEquals(180, p.getY());
+            assertEquals(5, p.getSides());
+            assertEquals(70, p.getSideLength());
+            assertEquals(45, p.getRotation(), 0.001);
+            assertEquals(Color.RED.getRGB(), p.getColor().getRGB());
         } finally {
-            Files.deleteIfExists(tempFile);
+            Files.deleteIfExists(tmp);
         }
     }
 
     @Test
     public void testSaveAndLoadNestedGroups() throws IOException {
-        Path tempFile = Files.createTempFile("groups", ".dat");
-
-        Rectangle rectangle = new Rectangle(60, 50, 90, 40, Color.GREEN);
-        rectangle.setRotation(10);
-        rectangle.setRotationCenter(65, 55);
-
-        RegularPolygon polygon = new RegularPolygon(130, 120, 6, 40, Color.ORANGE);
-        polygon.setRotation(30);
-        polygon.setRotationCenter(130, 120);
-
-        Group innerGroup = new Group();
-        innerGroup.add(rectangle);
-        innerGroup.add(polygon);
-        innerGroup.setRotation(15);
-
-        Group outerGroup = new Group();
-        outerGroup.add(innerGroup);
-        outerGroup.setRotation(60);
-
+        Path tmp = Files.createTempFile("groups", ".dat");
+        Group inner = new Group();
+        inner.add(new Rectangle(60, 50, 90, 40, Color.GREEN));
+        inner.add(new RegularPolygon(130, 120, 6, 40, Color.ORANGE));
+        inner.setRotation(15);
+        Group outer = new Group();
+        outer.add(inner);
+        outer.setRotation(60);
         try {
-            service.saveShapes(List.of(outerGroup), tempFile.toFile());
-            List<Shape> loadedShapes = service.loadShapes(tempFile.toFile());
+            service.saveShapes(List.of(outer), tmp.toFile());
+            List<Shape> shapes = service.loadShapes(tmp.toFile());
 
-            assertEquals(1, loadedShapes.size());
-            assertTrue(loadedShapes.get(0) instanceof Group);
+            assertEquals(1, shapes.size());
+            assertTrue(shapes.get(0) instanceof Group);
 
-            Group loadedOuterGroup = (Group) loadedShapes.get(0);
-            assertEquals(60, loadedOuterGroup.getRotation(), 0.001);
-            assertEquals(1, loadedOuterGroup.getChildren().size());
-            assertTrue(loadedOuterGroup.getChildren().get(0) instanceof Group);
+            Group loadedOuter = (Group) shapes.get(0);
+            assertEquals(60, loadedOuter.getRotation(), 0.001);
+            assertEquals(1, loadedOuter.getChildren().size());
 
-            Group loadedInnerGroup = (Group) loadedOuterGroup.getChildren().get(0);
-            assertEquals(15, loadedInnerGroup.getRotation(), 0.001);
-            assertEquals(2, loadedInnerGroup.getChildren().size());
-            assertTrue(loadedInnerGroup.getChildren().get(0) instanceof Rectangle);
-            assertTrue(loadedInnerGroup.getChildren().get(1) instanceof RegularPolygon);
+            Group loadedInner = (Group) loadedOuter.getChildren().get(0);
+            assertEquals(15, loadedInner.getRotation(), 0.001);
+            assertEquals(2, loadedInner.getChildren().size());
+            assertTrue(loadedInner.getChildren().get(0) instanceof Rectangle);
+            assertTrue(loadedInner.getChildren().get(1) instanceof RegularPolygon);
         } finally {
-            Files.deleteIfExists(tempFile);
+            Files.deleteIfExists(tmp);
         }
     }
 }

@@ -51,7 +51,6 @@ public class ShapeMemento {
             Group group = (Group) shape;
             this.groupCenterX = group.getGroupCenterX();
             this.groupCenterY = group.getGroupCenterY();
-            // Sauvegarde l'état de tous les enfants (récursif)
             for (Shape child : group.getChildren()) {
                 childrenMementos.add(new ShapeMemento(child));
             }
@@ -60,20 +59,16 @@ public class ShapeMemento {
 
     public void restore() {
         if (shape instanceof Group) {
-            // Pour les groupes, restaurer d'abord les enfants
             Group group = (Group) shape;
             List<Shape> children = group.getChildren();
             for (int i = 0; i < children.size() && i < childrenMementos.size(); i++) {
                 childrenMementos.get(i).restore();
             }
-            // Puis restaurer la position du groupe
             int currentCenterX = group.getGroupCenterX();
             int currentCenterY = group.getGroupCenterY();
             group.move(groupCenterX - currentCenterX, groupCenterY - currentCenterY);
-            // Et la rotation du groupe
             group.setRotation(rotation);
         } else {
-            // Pour les formes simples
             shape.move(x - shape.getX(), y - shape.getY());
             shape.setRotation(rotation);
 
