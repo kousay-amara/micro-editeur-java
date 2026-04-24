@@ -19,6 +19,7 @@ import model.RegularPolygon;
 import model.Group;
 import command.*;
 import java.awt.Point;
+import util.GeometryUtils;
 
 
 public class WhiteboardPanel extends Canvas implements SceneListener {
@@ -32,6 +33,7 @@ public class WhiteboardPanel extends Canvas implements SceneListener {
     private int dragStartY = 0;
     private int shapeStartX = 0;
     private int shapeStartY = 0;
+    private PopupMenu activePopupMenu;
     private boolean selecting = false;
     private int selX0, selY0, selX1, selY1;
 
@@ -169,8 +171,7 @@ private void handleRightClick(MouseEvent e) {
     }
 
     if (popup.getItemCount() > 0) {
-        add(popup);
-        popup.show(this, e.getX(), e.getY());
+        showPopupMenu(popup, e.getX(), e.getY());
     }
 }
 
@@ -206,7 +207,7 @@ private void handleRightClick(MouseEvent e) {
         }
         if (shape instanceof RegularPolygon) {
             RegularPolygon poly = (RegularPolygon) shape;
-            int r = (int) (poly.getSideLength() / (2 * Math.sin(Math.PI / poly.getSides())));
+            int r = GeometryUtils.computeRadius(poly.getSides(), poly.getSideLength());
             return Math.max(-toolbarWidth, Math.min(shape.getX(), panelW - r));
         }
         return Math.max(-toolbarWidth, Math.min(shape.getX(), panelW));
@@ -219,7 +220,7 @@ private void handleRightClick(MouseEvent e) {
         }
         if (shape instanceof RegularPolygon) {
             RegularPolygon poly = (RegularPolygon) shape;
-            int r = (int) (poly.getSideLength() / (2 * Math.sin(Math.PI / poly.getSides())));
+            int r = GeometryUtils.computeRadius(poly.getSides(), poly.getSideLength());
             return Math.max(r, Math.min(shape.getY(), panelH - r));
         }
         return Math.max(0, Math.min(shape.getY(), panelH));
@@ -295,5 +296,14 @@ private void handleMouseReleased(MouseEvent e) {
             int y = Math.min(selY0, selY1);
             g2.drawRect(x, y, Math.abs(selX1 - selX0), Math.abs(selY1 - selY0));
         }
+    }
+
+    private void showPopupMenu(PopupMenu popupMenu, int x, int y) {
+        if (activePopupMenu != null) {
+            remove(activePopupMenu);
+        }
+        activePopupMenu = popupMenu;
+        add(activePopupMenu);
+        activePopupMenu.show(this, x, y);
     }
 }

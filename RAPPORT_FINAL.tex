@@ -8,7 +8,7 @@
 \usepackage{listings}
 \usepackage{xcolor}
 \usepackage{tikz}
-\usetikzlibrary{positioning,arrows.meta,shadows,calc}
+\usetikzlibrary{positioning,arrows.meta,shadows,calc,shapes.multipart}
 \usepackage{hyperref}
 \usepackage{graphicx}
 
@@ -54,7 +54,7 @@ Micro-éditeur de figures géométriques vectorielles en Java AWT démontrant l'
 
 J'ai conçu un éditeur vectoriel interactif en Java AWT permettant de créer, modifier, grouper et annuler des opérations sur des formes géométriques. L'objectif était de démontrer l'application de design patterns pour construire une architecture maintenable, extensible et testable.
 
-Le sujet officiel comporte 8 cas d'utilisation. Cette version couvre l'ensemble du périmètre attendu : drag-drop de formes depuis une toolbar, groupage/dégroupage, édition des propriétés, sauvegarde de prototypes via clone, undo/redo, sauvegarde/chargement d'un document et persistance de la toolbar au redémarrage. L'implémentation s'appuie sur 20 tests unitaires.
+Le sujet officiel comporte 8 cas d'utilisation. Cette version couvre l'ensemble du périmètre attendu : drag-drop de formes depuis une toolbar, groupage/dégroupage, édition des propriétés, sauvegarde de prototypes via clone, undo/redo, sauvegarde/chargement d'un document et persistance de la toolbar au redémarrage. L'implémentation s'appuie sur 20 tests automatisés, mêlant tests unitaires et test d'intégration.
 
 \textbf{Contexte} : Ce projet a été réalisé en solo. L'implémentation couvre les 8 cas d'utilisation du sujet, avec une sélection multiple réalisée par \texttt{Ctrl+clics} successifs ou par rectangle de sélection.
 
@@ -76,7 +76,7 @@ En regardant le code : Shape.java ligne 19 définit l'interface, et chaque impl�
 
 Cela simplifiait énormément le drag-drop dans la toolbar : on stocke un prototype pour chaque forme, et quand l'utilisateur la traîne, on appelle \texttt{clone()} pour créer une instance indépendante. Si l'utilisateur la remet dans la toolbar, on la clone de nouveau.
 
-Les cas 7 et 8 s'appuient aussi sur ce mécanisme : la persistance de la toolbar sauvegarde l'ensemble des prototypes courants et les restaure au prochain démarrage via ces mêmes méthodes \texttt{clone()}.
+Le pattern Prototype reste central pour les cas 1 et 5, où la toolbar sert de réservoir de formes réutilisables. En revanche, pour les cas 7 et 8, la persistance repose surtout sur \texttt{ShapePersistenceService} et le DTO \texttt{ShapeData}, qui sérialisent explicitement les propriétés du modèle.
 
 \subsection{Command Pattern}
 
@@ -104,7 +104,7 @@ J'avais un problème : PropertyDialog avait 80+ lignes de code dupliquées pour 
 
 J'ai créé PropertyEditorStrategy (ligne 10) comme interface. La méthode \texttt{setupFields()} crée les bons champs et \texttt{applyChanges()} récupère les valeurs. Puis j'ai écrit trois implémentations : RectanglePropertyEditor, PolygonPropertyEditor, GroupPropertyEditor.
 
-PropertyDialog délègue maintenant le travail à la bonne stratégie (choix dynamique). Cela a réduit PropertyDialog de 252 lignes à 124 lignes. Et si j'ajoute une nouvelle forme à l'avenir, je crée une nouvelle stratégie sans toucher à PropertyDialog, avec ajout du cas correspondant dans la factory.
+PropertyDialog délègue maintenant le travail à la bonne stratégie (choix dynamique). Cela a réduit considérablement le volume de code spécifique dans le dialogue, bien au-delà de la moitié de l'implémentation initiale. Et si j'ajoute une nouvelle forme à l'avenir, je crée une nouvelle stratégie sans toucher à PropertyDialog, avec ajout du cas correspondant dans la factory.
 
 \subsection{Observer Pattern}
 
@@ -145,87 +145,125 @@ Le sujet comporte 8 cas d'utilisation. Le projet couvre les 8 cas :
   \item \textbf{Persistance toolbar} : l'état des prototypes est sauvegardé à la fermeture puis restauré au démarrage
 \end{enumerate}
 
-\section{Architecture Globale}
+\section{Diagramme UML}
 
-L'architecture respecte les spécifications du sujet, notamment la séparation entre les objets gérant le rendu graphique et les objets contenant les données de la scène.
+Le diagramme suivant présente une vue UML simplifiée des principales classes et de leurs dépendances.
 
 \begin{center}
+\resizebox{\textwidth}{!}{%
 \begin{tikzpicture}[
-  bloc/.style={
-    draw=gray!70, rounded corners=5pt,
-    text width=4.5cm, minimum height=1.6cm,
-    align=center, inner sep=8pt, font=\small,
-    drop shadow={opacity=0.12}
+  cls/.style={
+    draw=gray!55, rounded corners=4pt,
+    rectangle split, rectangle split parts=2,
+    rectangle split part align={center,left},
+    font=\scriptsize, text width=3.0cm,
+    inner sep=5pt,
+    drop shadow={opacity=0.07, shadow xshift=1pt, shadow yshift=-1pt}
   },
-  fl/.style={->, thick, >=Stealth, shorten >=3pt, shorten <=3pt}
+  dep/.style={-{Stealth[length=5pt]}, semithick, gray!60},
+  gen/.style={-{Triangle[open,length=7pt,width=9pt]}, semithick, gray!40},
+  assoc/.style={semithick, gray!60},
+  lbl/.style={font=\tiny, fill=white, inner sep=1.5pt}
 ]
 
-  % --- Noeuds ---
-  \node[bloc, fill=blue!15]   (vue)  at (-2.5, 7.0)
-    {\textbf{Vue / UI AWT}\\[3pt]
-     \scriptsize MainFrame, WhiteboardPanel\\ToolbarPanel, AwtShapeRenderer};
+%% ─── Ligne 1 : couche UI ───────────────────────────────────────
+\node[cls, fill=blue!8] (mainframe) at (0.0, 7.5)
+  {\textbf{MainFrame}\nodepart{second}
+   \texttt{saveDocument()}\\
+   \texttt{loadDocument()}};
 
-  \node[bloc, fill=orange!20] (ctrl) at ( 2.5, 7.0)
-    {\textbf{Interaction / Contrôle}\\[3pt]
-     \scriptsize SelectionController\\PropertyDialog, ControlPanel};
+\node[cls, fill=blue!8] (whiteboard) at (5.5, 7.5)
+  {\textbf{WhiteboardPanel}\nodepart{second}
+   \texttt{paint()}\\
+   \texttt{createShapeFrom}\\
+   \texttt{Prototype()}};
 
-  \node[bloc, fill=green!20]  (cmd)  at ( 0.0, 4.0)
-    {\textbf{Couche Commande}\\[3pt]
-     \scriptsize Command, CommandHistory\\ShapeMemento\\
-     \scriptsize Add/Move/Edit/Group/Ungroup};
+\node[cls, fill=orange!12] (selection) at (11.0, 7.5)
+  {\textbf{SelectionCtrl}\nodepart{second}
+   \texttt{toggleSelection()}\\
+   \texttt{groupSelected}\\
+   \texttt{Shapes()}};
 
-  \node[bloc, fill=red!12]    (mod)  at ( 0.0, 1.0)
-    {\textbf{Modèle}\\[3pt]
-     \scriptsize Scene, Shape, ShapeLeaf\\Rectangle, RegularPolygon, Group};
+%% ─── Ligne 2 : logique / commandes ────────────────────────────
+\node[cls, fill=purple!8] (persistence) at (-3.5, 3.8)
+  {\textbf{ShapePersist.}\\\textbf{Service}\nodepart{second}
+   \texttt{saveShapes()}\\
+   \texttt{loadShapes()}};
 
-  % --- Flèches ---
+\node[cls, fill=green!10] (history) at (2.75, 3.8)
+  {\textbf{CommandHistory}\nodepart{second}
+   \texttt{execute()}\\
+   \texttt{undo() / redo()}};
 
-  % Contrôle déclenche Commandes
-  \draw[fl] (ctrl.south) -- ++(0,-0.8) -| ($(cmd.north)+(0.8,0)$);
-  \node[font=\scriptsize, right=4pt] at ($(ctrl.south)+(0,-0.45)$) {déclenche};
+\node[cls, fill=red!8] (scene) at (8.5, 3.8)
+  {\textbf{Scene}\nodepart{second}
+   \texttt{addShape()}\\
+   \texttt{replaceShapes()}};
 
-  % Vue déclenche Commandes
-  \draw[fl] (vue.south) -- ++(0,-0.8) -| ($(cmd.north)+(-0.8,0)$);
-  \node[font=\scriptsize, left=4pt] at ($(vue.south)+(0,-0.45)$) {déclenche};
+%% ─── Ligne 3 : modèle abstrait ─────────────────────────────────
+\node[cls, fill=purple!5] (shapedata) at (-3.5, 0.5)
+  {\textbf{ShapeData}\nodepart{second}
+   \texttt{type, x, y}\\
+   \texttt{children}};
 
-  % Commandes modifie Modèle
-  \draw[fl] (cmd.south) -- (mod.north);
-  \node[font=\scriptsize, right=4pt] at ($(cmd.south)!0.5!(mod.north)$) {modifie};
+\node[cls, fill=red!5] (shape) at (3.5, 0.5)
+  {\textbf{Shape}~{\tiny\textit{<<interface>>}}\nodepart{second}
+   \texttt{move(), clone()}\\
+   \texttt{contains()}};
 
-  % Observer : angles droits garantis via coordinate intermédiaire
-  \coordinate (obsL) at ($(mod.west)+(-3.0,0)$);
-  \draw[fl, dashed, gray!50]
-    (mod.west) -- (obsL) -- (obsL |- vue.west) -- (vue.west);
-  \node[font=\scriptsize, align=center, right=4pt]
-    at ($(obsL)!0.5!(obsL |- vue.west)$) {Observer\\SceneListener};
+\node[cls, fill=red!5] (shapeleaf) at (8.5, 0.5)
+  {\textbf{ShapeLeaf}\nodepart{second}
+   \texttt{color}\\
+   \texttt{rotation}};
 
-  % --- Couche Persistance (côté droit) ---
-  \node[bloc, fill=purple!10, text width=3.2cm] (pers) at (6.2, 4.0)
-    {\textbf{Couche Persistance}\\[3pt]
-     \scriptsize ShapePersistenceService\\ShapeData (DTO)};
+\node[cls, fill=red!5] (group) at (13.5, 0.5)
+  {\textbf{Group}\nodepart{second}
+   \texttt{add(Shape)}\\
+   \texttt{rotateAround}\\
+   \texttt{Center()}};
 
-  % Vue/MainFrame → Persistance (sauvegarde/chargement, passe par-dessus les blocs)
-  \draw[fl] (vue.north) -- ++(0,0.5) -| (pers.north);
-  \node[font=\scriptsize, align=center, right=4pt] at (6.2, 6.5) {sauvegarde\\charge};
+%% ─── Ligne 4 : formes concrètes ────────────────────────────────
+\node[cls, fill=red!4] (rectangle) at (6.5, -2.5)
+  {\textbf{Rectangle}\nodepart{second}
+   \texttt{width, height}\\
+   \texttt{cornerRadius}};
 
-  % Persistance → Modèle (sérialisation)
-  \draw[fl] (pers.south) |- (mod.east);
-  \node[font=\scriptsize, right=4pt] at (6.2, 1.9) {sérialise};
+\node[cls, fill=red!4] (polygon) at (11.0, -2.5)
+  {\textbf{RegularPolygon}\nodepart{second}
+   \texttt{sides}\\
+   \texttt{sideLength}};
+
+%% ─── Dépendances UI ────────────────────────────────────────────
+\draw[dep] (mainframe.east)  -- node[lbl,above] {utilise}  (whiteboard.west);
+\draw[dep] (whiteboard.east) -- node[lbl,above] {délègue}  (selection.west);
+
+\draw[dep] (mainframe)  to[out=-100,in=150] node[lbl] {pilote}   (history);
+\draw[dep] (mainframe)  to[out=190, in=90]  node[lbl,left] {persiste} (persistence);
+\draw[dep] (mainframe)  to[out=-50,in=150] node[lbl,right] {\texttt{replaceShapes()}} (scene);
+\draw[dep] (whiteboard) to[out=-80, in=120] node[lbl,right] {observe}  (scene);
+\draw[dep] (selection.south) -- node[lbl,right] {manipule} (scene.north);
+\draw[dep] (selection.north) -- ++(0,0.55)
+           -- node[lbl,above] {déclenche} ($(history.north)+(0,0.55)$)
+           -- (history.north);
+
+%% ─── Dépendances Persistance ───────────────────────────────────
+\draw[dep] (persistence.south) -- node[lbl,right] {lit/écrit}   (shapedata.north);
+
+%% ─── Association Scène → Modèle ────────────────────────────────
+\draw[assoc] (scene) to[out=-100,in=70] node[lbl,right] {0..*} (shape);
+
+%% ─── Héritage ──────────────────────────────────────────────────
+\draw[gen] (shapeleaf.west) -- (shape.east);
+\draw[gen] (group) to[out=150,in=30] (shape);
+
+\draw[gen] (rectangle) to[out=100,in=-130] (shapeleaf.south west);
+\draw[gen] (polygon)   to[out=120,in=-40]  (shapeleaf.south east);
 
 \end{tikzpicture}
+}
 \end{center}
 
-\noindent Ce diagramme suit la logique vue en cours et dans les corrections : une architecture par blocs, avec les dépendances principales visibles sans détailler toute l'UML des classes.
-
-\textbf{Modèle} : Shape (interface), Rectangle, RegularPolygon, Group (composite), Scene (conteneur). Ces classes contiennent uniquement les données et la logique métier, sans rendu graphique.
-
-\textbf{Vue / UI AWT} : MainFrame (orchestrateur, détient Scene, CommandHistory et ShapePersistenceService), WhiteboardPanel (fenêtre de dessin), ToolbarPanel (affichage des prototypes), AwtShapeRenderer (rendu graphique). Le rendu reste indépendant des données.
-
-\textbf{Couche Commande} : Command (interface), CommandHistory (gestion undo/redo), ShapeMemento (snapshots d'état), et 8 commandes concrètes. Cela permet des opérations réversibles.
-
-\textbf{Interaction / Contrôle} : PropertyDialog (édition des propriétés), SelectionController (logique de sélection/groupage). Ces composants orchestrent l'interaction utilisateur et déclenchent certaines modifications du modèle, directement ou via les commandes.
-
-\textbf{Couche Persistance} : ShapePersistenceService sérialise/désérialise les formes (sérialisation Java) ; ShapeData est le DTO de transfert. Cette couche gère la sauvegarde du document (cas 7) et la persistance de la toolbar entre sessions (cas 8).
+\noindent Cette vue UML met en évidence la hiérarchie des formes, les dépendances entre interface et contrôleur, le rôle de l'historique de commandes, ainsi que la place de la persistance dans le cycle de vie du document et de la toolbar.
 
 Cette organisation maintient une séparation claire des responsabilités et facilite la maintenance.
 

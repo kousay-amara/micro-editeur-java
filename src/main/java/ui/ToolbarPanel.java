@@ -66,7 +66,6 @@ public class ToolbarPanel extends Panel {
     }
 
     public void addPrototype(Shape prototype) {
-        prototype.move(-prototype.getX(), -prototype.getY());
         history.execute(new AddPrototypeCommand(this, prototype));
     }
 

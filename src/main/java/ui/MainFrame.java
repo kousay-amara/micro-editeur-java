@@ -12,10 +12,13 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import command.CommandHistory;
 import model.Scene;
 import model.Shape;
 import persistence.ShapePersistenceService;
+import ui.ToolbarPanel.DropListener;
+import ui.WhiteboardPanel.ShapeToToolbarListener;
 
 public class MainFrame extends Frame {
     private static final String TOOLBAR_STATE_FILENAME = ".micro-editeur-toolbar.dat";
@@ -27,6 +30,8 @@ public class MainFrame extends Frame {
     private CommandHistory history;
     private final ShapePersistenceService persistenceService;
     private final File toolbarStateFile;
+    private DropListener toolbarDropListener;
+    private ShapeToToolbarListener shapeToToolbarListener;
 
     public MainFrame() {
         setTitle("Micro-Editeur");
@@ -40,52 +45,14 @@ public class MainFrame extends Frame {
         whiteboardPanel = new WhiteboardPanel(scene, history);
         whiteboardPanel.initializeSelectionController();
 
-        toolbarPanel = new ToolbarPanel(new ToolbarPanel.DropListener() {
-            @Override
-            public void onDrop(Shape prototype, int screenX, int screenY) {
-                Point wbLoc = whiteboardPanel.getLocationOnScreen();
-                if (screenX >= wbLoc.x && screenX < wbLoc.x + whiteboardPanel.getWidth()
-                        && screenY >= wbLoc.y && screenY < wbLoc.y + whiteboardPanel.getHeight()) {
-                    Shape clone = prototype.clone();
-                    int localX = screenX - wbLoc.x;
-                    int localY = screenY - wbLoc.y;
-                    clone.move(localX - clone.getX(), localY - clone.getY());
-                    whiteboardPanel.createShapeFromPrototype(clone);
-                }
-            }
-        }, history);
+        toolbarDropListener = this::handleToolbarDrop;
+        toolbarPanel = new ToolbarPanel(toolbarDropListener, history);
         restoreToolbarState();
 
-        whiteboardPanel.setShapeToToolbarListener(new WhiteboardPanel.ShapeToToolbarListener() {
-            @Override
-            public boolean isOverToolbar(int screenX, int screenY) {
-                Point tbLoc = toolbarPanel.getLocationOnScreen();
-                return screenX >= tbLoc.x && screenX < tbLoc.x + toolbarPanel.getWidth()
-                        && screenY >= tbLoc.y && screenY < tbLoc.y + toolbarPanel.getHeight();
-            }
+        shapeToToolbarListener = createShapeToToolbarListener();
+        whiteboardPanel.setShapeToToolbarListener(shapeToToolbarListener);
 
-            @Override
-            public boolean isOverTrash(int screenX, int screenY) {
-                return toolbarPanel.isOverTrash(screenX, screenY);
-            }
-
-            @Override
-            public void onDrop(Shape clone) {
-                toolbarPanel.addPrototype(clone);
-            }
-        });
-
-        controlPanel = new ControlPanel(history, whiteboardPanel, new Runnable() {
-            @Override
-            public void run() {
-                saveDocument();
-            }
-        }, new Runnable() {
-            @Override
-            public void run() {
-                loadDocument();
-            }
-        });
+        controlPanel = new ControlPanel(history, whiteboardPanel, this::saveDocument, this::loadDocument);
         whiteboardPanel.setControlPanel(controlPanel);
 
         setLayout(new BorderLayout());
@@ -110,6 +77,49 @@ public class MainFrame extends Frame {
         new MainFrame();
     }
 
+    private void handleToolbarDrop(Shape prototype, int screenX, int screenY) {
+        Point whiteboardLocation = whiteboardPanel.getLocationOnScreen();
+        if (!isInsideWhiteboard(screenX, screenY, whiteboardLocation)) {
+            return;
+        }
+
+        Shape clone = prototype.clone();
+        int localX = screenX - whiteboardLocation.x;
+        int localY = screenY - whiteboardLocation.y;
+        clone.move(localX - clone.getX(), localY - clone.getY());
+        whiteboardPanel.createShapeFromPrototype(clone);
+    }
+
+    private boolean isInsideWhiteboard(int screenX, int screenY, Point whiteboardLocation) {
+        return screenX >= whiteboardLocation.x
+                && screenX < whiteboardLocation.x + whiteboardPanel.getWidth()
+                && screenY >= whiteboardLocation.y
+                && screenY < whiteboardLocation.y + whiteboardPanel.getHeight();
+    }
+
+    private ShapeToToolbarListener createShapeToToolbarListener() {
+        return new ShapeToToolbarListener() {
+            @Override
+            public boolean isOverToolbar(int screenX, int screenY) {
+                Point toolbarLocation = toolbarPanel.getLocationOnScreen();
+                return screenX >= toolbarLocation.x
+                        && screenX < toolbarLocation.x + toolbarPanel.getWidth()
+                        && screenY >= toolbarLocation.y
+                        && screenY < toolbarLocation.y + toolbarPanel.getHeight();
+            }
+
+            @Override
+            public boolean isOverTrash(int screenX, int screenY) {
+                return toolbarPanel.isOverTrash(screenX, screenY);
+            }
+
+            @Override
+            public void onDrop(Shape clone) {
+                toolbarPanel.addPrototype(clone);
+            }
+        };
+    }
+
     private void saveDocument() {
         FileDialog dialog = new FileDialog(this, "Sauvegarder le document", FileDialog.SAVE);
         dialog.setFile("document.mfg");
@@ -121,7 +131,8 @@ public class MainFrame extends Frame {
         }
 
         try {
-            persistenceService.saveShapes(scene.getShapes(), selectedFile);
+            List<Shape> currentShapes = scene.getShapes();
+            persistenceService.saveShapes(currentShapes, selectedFile);
             showMessage("Sauvegarde", "Document sauvegarde.");
         } catch (IOException e) {
             showMessage("Erreur de sauvegarde", "Impossible de sauvegarder le document.");
@@ -138,7 +149,8 @@ public class MainFrame extends Frame {
         }
 
         try {
-            scene.replaceShapes(persistenceService.loadShapes(selectedFile));
+            List<Shape> loadedShapes = persistenceService.loadShapes(selectedFile);
+            scene.replaceShapes(loadedShapes);
             history.clear();
             whiteboardPanel.onHistoryChanged();
         } catch (IOException e) {
@@ -152,7 +164,8 @@ public class MainFrame extends Frame {
         }
 
         try {
-            toolbarPanel.replacePrototypes(persistenceService.loadShapes(toolbarStateFile));
+            List<Shape> toolbarPrototypes = persistenceService.loadShapes(toolbarStateFile);
+            toolbarPanel.replacePrototypes(toolbarPrototypes);
         } catch (IOException e) {
             showMessage("Etat toolbar ignore", "Impossible de recharger l'etat precedent de la toolbar.");
         }
@@ -160,7 +173,8 @@ public class MainFrame extends Frame {
 
     private void persistToolbarState() {
         try {
-            persistenceService.saveShapes(toolbarPanel.getPrototypesSnapshot(), toolbarStateFile);
+            List<Shape> toolbarPrototypes = toolbarPanel.getPrototypesSnapshot();
+            persistenceService.saveShapes(toolbarPrototypes, toolbarStateFile);
         } catch (IOException e) {
             showMessage("Erreur toolbar", "Impossible de sauvegarder l'etat de la toolbar.");
         }

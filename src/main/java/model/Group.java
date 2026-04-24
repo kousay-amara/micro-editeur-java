@@ -294,39 +294,15 @@ public class Group implements Shape {
     private Bounds getRectangleBounds(Rectangle rectangle) {
         int x = rectangle.getX() - rectangle.getWidth() / 2;
         int y = rectangle.getY() - rectangle.getHeight() / 2;
-        int width = rectangle.getWidth();
-        int height = rectangle.getHeight();
-        double rotation = Math.toRadians(-rectangle.getRotation());
-        int pivotX = rectangle.getRotationCenterX();
-        int pivotY = rectangle.getRotationCenterY();
-
-        if (rotation == 0) {
-            return new Bounds(x, y, x + width, y + height);
-        }
-        double[][] corners = {
-                {x, y},
-                {x + width, y},
-                {x + width, y + height},
-                {x, y + height}
-        };
-
-        int minX = Integer.MAX_VALUE;
-        int minY = Integer.MAX_VALUE;
-        int maxX = Integer.MIN_VALUE;
-        int maxY = Integer.MIN_VALUE;
-
-        for (double[] corner : corners) {
-            double translatedX = corner[0] - pivotX;
-            double translatedY = corner[1] - pivotY;
-            int rotatedX = (int) Math.round(translatedX * Math.cos(rotation) - translatedY * Math.sin(rotation) + pivotX);
-            int rotatedY = (int) Math.round(translatedX * Math.sin(rotation) + translatedY * Math.cos(rotation) + pivotY);
-            minX = Math.min(minX, rotatedX);
-            minY = Math.min(minY, rotatedY);
-            maxX = Math.max(maxX, rotatedX);
-            maxY = Math.max(maxY, rotatedY);
-        }
-
-        return new Bounds(minX, minY, maxX, maxY);
+        int[] bounds = GeometryUtils.getRotatedRectangleBounds(
+                x,
+                y,
+                rectangle.getWidth(),
+                rectangle.getHeight(),
+                rectangle.getRotationCenterX(),
+                rectangle.getRotationCenterY(),
+                rectangle.getRotation());
+        return new Bounds(bounds[0], bounds[1], bounds[2], bounds[3]);
     }
 
     private Bounds getPolygonBounds(RegularPolygon polygon) {
