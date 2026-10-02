@@ -1,309 +1,82 @@
-# Micro-Editeur: Vector Graphics Editor
+# Micro-Éditeur
 
-A Java AWT application demonstrating clean architecture and design patterns for building maintainable, extensible software.
+Éditeur de formes géométriques vectorielles en Java AWT, démontrant l'application de 6 design patterns pour une architecture maintenable et testable. Projet universitaire réalisé **seul**, dans le cadre d'un cours d'architecture logicielle à l'**Université de Bordeaux** (avril 2026). Le sujet imposait 8 cas d'usage ; cette version les couvre tous.
 
-## Quick Start
+## Fonctionnalités
+
+- Créer et éditer des formes (rectangles, polygones réguliers)
+- Grouper/dégrouper des formes (groupes imbriqués)
+- Annuler/rétablir toute opération (undo/redo)
+- Éditer les propriétés d'une forme (taille, position, rotation, couleur...)
+- Glisser-déposer des formes depuis la barre d'outils
+- Sauvegarder/charger un document
+- Persistance de l'état de la barre d'outils au redémarrage
+
+## Technologies
+
+- **Langage** : Java (AWT, Swing pour les dialogues)
+- **Build** : Maven (`pom.xml`)
+- **Tests** : JUnit
+
+## Installation et lancement
+
+Prérequis : Java 11 (version configurée dans `pom.xml`), Maven 3.6+.
 
 ```bash
-cd projet
 mvn clean compile
 mvn exec:java -Dexec.mainClass="ui.MainFrame"
 ```
 
-## Project Overview
-
-### What is it?
-
-Micro-Editeur is a lightweight vector graphics editor allowing users to:
-- Create and edit shapes (rectangles, regular polygons)
-- Group/ungroup shapes
-- Undo/redo operations
-- Edit shape properties (size, position, rotation, color, etc.)
-- Drag shapes to/from toolbar
-- Save/load documents
-- Restore toolbar state at startup
-
-### Architecture
-
-The project follows **Model-View-Controller (MVC)** pattern:
-
-```
-Model (Domain)           View (UI)              Controller (Logic)
-├── Shape               ├── WhiteboardPanel    ├── SelectionController
-├── Rectangle           ├── ToolbarPanel       └── Event Handlers
-├── RegularPolygon      ├── PropertyDialog
-├── Group               └── AwtShapeRenderer
-└── Scene
-```
-
-**Key Design Patterns Used**:
-- Command Pattern (undo/redo)
-- Memento Pattern (state capture/restore)
-- Observer Pattern (event notifications)
-- Strategy Pattern (property editors)
-- Factory Pattern (object creation)
-- Composite Pattern (shape hierarchies)
-- Controller Pattern (business logic)
-
-## Documentation
-
-### For Understanding Architecture
-📄 **[ARCHITECTURE.md](../ARCHITECTURE.md)**
-- Overall system design
-- Data flow examples
-- Pattern relationships
-- SOLID principles compliance
-
-### For Learning Design Patterns
-📄 **[PATTERNS.md](../PATTERNS.md)**
-- Quick reference for each pattern
-- Before/after examples
-- Problem/solution for each pattern
-- Learning path through codebase
-
-### For Project Report
-📄 **[RAPPORT_FINAL.tex](RAPPORT_FINAL.tex)** / **[RAPPORT_FINAL.pdf](RAPPORT_FINAL.pdf)**
-- Submission report aligned with the current codebase
-- Implemented patterns and known limitations
-- Test summary and use-case coverage
-
-## Code Structure
-
-```
-projet/src/main/java/
-├── model/              # Domain classes
-│   ├── Shape.java     # Base interface
-│   ├── Rectangle.java
-│   ├── RegularPolygon.java
-│   ├── Group.java     # Composite node
-│   └── Scene.java     # Collection container
-│
-├── ui/                # User interface
-│   ├── MainFrame.java
-│   ├── WhiteboardPanel.java
-│   ├── ToolbarPanel.java
-│   ├── PropertyDialog.java
-│   ├── SelectionController.java  # Extracted business logic
-│   ├── UIConstants.java          # Configuration
-│   ├── AwtShapeRenderer.java
-│   ├── ShapeRenderer.java
-│   ├── ControlPanel.java
-│   └── strategy/      # Property editors (Strategy pattern)
-│       ├── PropertyEditorStrategy.java
-│       ├── RectanglePropertyEditor.java
-│       ├── PolygonPropertyEditor.java
-│       ├── GroupPropertyEditor.java
-│       └── PropertyEditorFactory.java
-│
-├── command/           # Command pattern for undo/redo
-│   ├── Command.java
-│   ├── CommandHistory.java
-│   ├── AddShapeCommand.java
-│   ├── RemoveShapeCommand.java
-│   ├── MoveShapeCommand.java
-│   ├── EditShapeCommand.java
-│   ├── GroupCommand.java
-│   ├── UngroupCommand.java
-│   ├── AddPrototypeCommand.java
-│   ├── RemovePrototypeCommand.java
-│   └── ShapeMemento.java
-│
-└── util/              # Utilities
-    └── GeometryUtils.java  # Shared geometry calculations
-```
-
-## Key Features
-
-### Undo/Redo
-- **Double-stack pattern**: separate undo and redo stacks
-- **All operations undoable**: shape creation, editing, moving, grouping
-- **State restoration**: uses Memento pattern to capture/restore shapes
-
-### Persistence
-- **Document save/load**: saves the current scene to a file and reloads it later
-- **Toolbar restoration**: toolbar prototypes are persisted and restored at startup
-- **Model-only format**: persistence stores shapes, groups, and their properties without UI state
-
-### Grouping
-- **Composite pattern**: Groups behave like shapes
-- **Recursive operations**: move, rotate, scale apply to all children
-- **Nested groups**: groups can contain other groups
-
-### Property Editing
-- **Strategy pattern**: each shape type has dedicated editor
-- **Type-safe editing**: dedicated fields for Rectangle, Polygon, Group
-- **Inline validation**: bounds checking, side count validation
-
-### Visual Feedback
-- **Selection highlighting**: selected shapes are lighter/visible
-- **Drag preview**: shapes preview while dragging
-- **Toolbar preview**: each shape shows preview in toolbar
-
-## Design Highlights
-
-### Separation of Concerns
-
-**WhiteboardPanel** (215 lines)
-- Pure event handling
-- Delegates to SelectionController
-- Minimal business logic
-
-**SelectionController** (150 lines)
-- Selection state management
-- Grouping operations
-- Shape editing coordination
-
-**AwtShapeRenderer** (285 lines)
-- Pure rendering logic
-- Uses GeometryUtils for calculations
-- No business logic
-
-### Extensibility (Open/Closed Principle)
-
-**Adding New Shape Type**:
-1. Create class implementing Shape
-2. Create PropertyEditor for new type
-3. Done! No changes needed to:
-   - PropertyDialog
-   - WhiteboardPanel
-   - CommandHistory
-
-**Adding New Operation**:
-1. Implement Command interface
-2. Done! CommandHistory handles undo/redo automatically
-
-### Maintainability
-
-**Magic Numbers**
-- Centralized in UIConstants
-- Change toolbar width in 1 place, affects entire UI
-
-**Geometry Logic**
-- Shared in GeometryUtils
-- Used by renderer, bounds calculation, shape clamping
-- Fix bugs in 1 location
-
-**Property Editing**
-- Duplicated code eliminated via Strategy pattern
-- Each editor focuses on one shape type
-- Common error handling
-
-## Testing
-
-### Running Tests
+## Tests
 
 ```bash
 mvn test
 ```
 
-**Coverage**: 20 tests
-- 8 Command tests (undo/redo, commands)
-- 10 Model tests (shapes, groups, operations)
-- 2 Persistence tests (save/load of shapes and nested groups)
+**Résultat vérifié sur cette version** : 20 tests, tous passent (8 tests Command, 10 tests Model, 2 tests Persistence).
 
-**All tests passing** ✅
+## Architecture et design patterns
 
-### Test Strategy
+Le projet suit une architecture **MVC** (Modèle `model/`, Vue `ui/`, Contrôleur `SelectionController`) et met en œuvre 6 design patterns :
 
-- Unit tests for core domain logic
-- Integration tests for command execution
-- Tests verify undo/redo functionality
+| Pattern | Classe(s) | Rôle |
+|---|---|---|
+| **Command** | `Command`, `CommandHistory`, `AddShapeCommand`, `EditShapeCommand`... | Undo/redo via deux piles (annuler/rétablir) |
+| **Memento** | `ShapeMemento` | Capture/restauration de l'état d'une forme avant modification |
+| **Observer** | `Scene`, `SceneListener` | Notifie l'interface quand le modèle change |
+| **Strategy** | `PropertyEditorStrategy`, `RectanglePropertyEditor`, `PolygonPropertyEditor`, `GroupPropertyEditor` | Édition de propriétés spécifique à chaque type de forme, sans `if/else` en cascade |
+| **Factory** | `PropertyEditorFactory`, méthodes factory de `EditShapeCommand` | Création d'objets sans exposer le type concret à l'appelant |
+| **Composite** | `Shape` (interface), `Rectangle`/`RegularPolygon` (feuilles), `Group` (composite) | Traite groupes et formes individuelles de façon uniforme |
 
-## Building
+## Structure du code
 
-### Requirements
-- Java 8+
-- Maven 3.6+
-
-### Build
-```bash
-mvn clean compile
+```
+src/main/java/
+├── model/       # Shape, Rectangle, RegularPolygon, Group, Scene
+├── ui/          # MainFrame, WhiteboardPanel, ToolbarPanel, PropertyDialog...
+│   └── strategy/  # Éditeurs de propriétés (Strategy)
+├── command/     # Command, CommandHistory, et toutes les commandes
+└── util/        # GeometryUtils
+src/test/java/   # 20 tests JUnit (command/, model/, persistence/)
 ```
 
-### Run
-```bash
-mvn exec:java -Dexec.mainClass="ui.MainFrame"
-```
+## Limites connues
 
-## Known Limitations & Future Work
+- Certains endroits utilisent encore `instanceof` pour distinguer les types de formes (clamping des limites, rendu) — une interface dédiée ou un pattern Visitor réglerait ça proprement
+- Toute modification du modèle déclenche un repaint complet, même pour un simple changement de sélection
 
-### Current Limitations
+## Auteur
 
-1. **Type Casting** (WhiteboardPanel bounds clamping)
-   - Uses instanceof Rectangle vs RegularPolygon
-   - Future: Implement BoundedShape interface
+Projet réalisé seul par **Kousay Amara**.
 
-2. **Rendering Dispatch** (AwtShapeRenderer)
-   - Uses instanceof for shape types
-   - Future: Implement Visitor pattern
+## Ce que j'ai réalisé
 
-3. **Notifications** (SceneListener)
-   - All changes trigger full repaint (including selection)
-   - Future: Separate SelectionListener for selection-only changes
+L'intégralité du projet (conception, implémentation des 6 patterns, tests) : architecture MVC, moteur d'undo/redo (Command + Memento), persistance (sauvegarde/chargement de documents et de la barre d'outils), et le mécanisme d'édition de propriétés par Strategy.
 
-### Future Enhancements
+## Origine du sujet
 
-- [ ] **Multi-level Undo**: Batch related commands (e.g., drag-move)
-- [ ] **Layers**: Organize shapes into named layers
-- [ ] **Performance**: Cache bounding boxes, optimize repaints
-- [ ] **Transformation Tool**: Unified scale/rotate gizmo
-- [ ] **Plugin Architecture**: Allow custom shape types at runtime
+Le sujet (8 cas d'usage imposés) a été fourni dans le cadre du cours. Son contenu n'est pas reproduit ici ; seule l'implémentation est de mon fait.
 
-## Code Metrics
+## Licence
 
-| Metric | Value |
-|--------|-------|
-| Total Lines (Java) | ~3,500 |
-| Test Coverage | 20 tests |
-| Passing Tests | 20/20 (100%) |
-| Cyclomatic Complexity | Low (refactored) |
-| Code Duplication | Eliminated (GeometryUtils, PropertyEditorStrategy) |
-
-## Patterns Implemented
-
-| Pattern | Location | Purpose |
-|---------|----------|---------|
-| **MVC** | model/, ui/, SelectionController | Separate concerns |
-| **Command** | command/ | Undo/redo |
-| **Memento** | ShapeMemento | State capture |
-| **Observer** | Scene/SceneListener | Event notification |
-| **Strategy** | PropertyEditorStrategy | Polymorphic editing |
-| **Factory** | PropertyEditorFactory, EditShapeCommand | Object creation |
-| **Composite** | Group, Shape | Shape hierarchies |
-| **Controller** | SelectionController | Business logic |
-
-## Learning Resources
-
-### Understand the Patterns
-1. Read [PATTERNS.md](../PATTERNS.md) for quick reference
-2. Look at specific pattern implementation in code
-3. Compare with the project report in [RAPPORT_FINAL.tex](RAPPORT_FINAL.tex)
-
-### Understand the Architecture
-1. Start with [ARCHITECTURE.md](../ARCHITECTURE.md)
-2. Follow data flow examples
-3. Trace user actions through code
-
-### Improve the Code
-1. Review "Future Work" above
-2. Look at "Known Limitations"
-3. See pattern recommendations in [PATTERNS.md](../PATTERNS.md)
-
-## Contributing
-
-When adding features:
-1. Follow established patterns
-2. Add tests for new functionality
-3. Maintain separation of concerns
-4. Update documentation (`../ARCHITECTURE.md`, `../PATTERNS.md`, `RAPPORT_FINAL.tex`)
-
-## License
-
-Educational project - MIT License
-
-## Contact
-
-For questions about patterns or architecture, see documentation files:
-- [ARCHITECTURE.md](../ARCHITECTURE.md) – System design
-- [PATTERNS.md](../PATTERNS.md) – Pattern reference
-- [RAPPORT_FINAL.tex](RAPPORT_FINAL.tex) – Submission report
+Ce projet est sous licence [MIT](LICENSE).
